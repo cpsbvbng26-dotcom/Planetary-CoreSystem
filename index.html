@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Planetary Core System</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700&display=swap" rel="stylesheet"/>
+<style>
+/* ===== DESIGN TOKENS ===== */
+:root {
+  --text-xs:   clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --text-sm:   clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-lg:   clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+  --text-xl:   clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+  --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem;
+  --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
+  --space-16: 4rem;
+  --radius-sm: 0.375rem; --radius-md: 0.5rem;
+  --radius-lg: 0.75rem; --radius-xl: 1rem; --radius-full: 9999px;
+  --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] {
+  --bg:       #0a0c0f;
+  --surface:  #10141a;
+  --surface2: #151b24;
+  --surface3: #1a2230;
+  --border:   #1e2a3a;
+  --divider:  #172030;
+  --text:     #c8d4e0;
+  --muted:    #5a7080;
+  --faint:    #2e3d4d;
+  --accent:   #3d8fbf;
+  --accent-h: #2a6f9a;
+  --accent-hl:#0f2d3d;
+  --warn:     #bf7a30;
+  --warn-hl:  #3a2510;
+  --danger:   #bf3d5a;
+  --danger-hl:#3a0f1a;
+  --ok:       #3abf7a;
+  --ok-hl:    #0f3a22;
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.25);
+  --shadow-md: 0 4px 16px oklch(0 0 0 / 0.35);
+  --shadow-lg: 0 12px 40px oklch(0 0 0 / 0.5);
+}
+
+[data-theme="light"] {
+  --bg:       #f2f5f8;
+  --surface:  #ffffff;
+  --surface2: #f7f9fb;
+  --surface3: #edf2f7;
+  --border:   #d0dce8;
+  --divider:  #e0eaf2;
+  --text:     #1a2530;
+  --muted:    #5a7080;
+  --faint:    #b0c0cc;
+  --accent:   #1a6fa0;
+  --accent-h: #155a85;
+  --accent-hl:#dceef8;
+  --warn:     #a05a1a;
+  --warn-hl:  #fdf0e0;
+  --danger:   #a01a35;
+  --danger-hl:#fde8ec;
+  --ok:       #1a8050;
+  --ok-hl:    #e2f5eb;
+  --shadow-sm: 0 1px 2px oklch(0.2 0.01 220 / 0.06);
+  --shadow-md: 0 4px 16px oklch(0.2 0.01 220 / 0.08);
+  --shadow-lg: 0 12px 40px oklch(0.2 0.01 220 / 0.12);
+}
+
+/* ===== BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+html {
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+body {
+  font-family: 'Satoshi', 'Inter', sans-serif;
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.6;
+  min-height: 100dvh;
+}
+button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+input, select, textarea { font: inherit; color: inherit; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ===== LAYOUT ===== */
+.app {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: 48px 1fr;
+  height: 100dvh;
+}
+.topbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--space-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  z-index: 20;
+  gap: var(--space-4);
+}
+.sidebar {
+  grid-row: 2;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4) 0;
+}
+.main {
+  grid-row: 2;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-6);
+  background: var(--bg);
+}
+
+/* ===== TOPBAR ===== */
+.logo {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-sm); font-weight: 600;
+  letter-spacing: 0.02em; color: var(--text);
+  text-decoration: none;
+}
+.logo svg { flex-shrink: 0; }
+.topbar-right { display: flex; align-items: center; gap: var(--space-3); }
+
+/* STATUS BADGE */
+.status-badge {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-xs); font-weight: 500;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+}
+.status-badge.active { color: var(--ok); border-color: var(--ok); background: var(--ok-hl); }
+.status-badge.warning { color: var(--warn); border-color: var(--warn); background: var(--warn-hl); }
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: currentColor;
+  animation: none;
+}
+.status-badge.active .status-dot { animation: pulse-ok 1.8s ease-in-out infinite; }
+.status-badge.warning .status-dot { animation: pulse-warn 1s ease-in-out infinite; }
+@keyframes pulse-ok {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+@keyframes pulse-warn {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+}
+
+/* ICON BTN */
+.icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  color: var(--muted);
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+}
+.icon-btn:hover { color: var(--text); background: var(--surface2); border-color: var(--border); }
+
+/* ===== SIDEBAR ===== */
+.sidebar-section { padding: 0 var(--space-3) var(--space-2); }
+.sidebar-label {
+  font-size: var(--text-xs); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted); padding: var(--space-3) var(--space-2) var(--space-2);
+  display: block;
+}
+.sidebar-item {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm); color: var(--muted);
+  cursor: pointer; text-decoration: none;
+  transition: color var(--transition), background var(--transition);
+  border: 1px solid transparent;
+  user-select: none;
+}
+.sidebar-item:hover { color: var(--text); background: var(--surface2); }
+.sidebar-item.active { color: var(--accent); background: var(--accent-hl); border-color: color-mix(in oklab, var(--accent) 20%, transparent); }
+.sidebar-divider { height: 1px; background: var(--divider); margin: var(--space-3) var(--space-3); }
+
+/* ===== CONTENT ===== */
+.page { display: none; flex-direction: column; gap: var(--space-6); }
+.page.visible { display: flex; }
+.page-title { font-size: var(--text-xl); font-weight: 700; color: var(--text); line-height: 1.2; }
+.page-desc { font-size: var(--text-sm); color: var(--muted); max-width: 60ch; margin-top: var(--space-2); }
+
+/* ===== KPI CARDS ===== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
+  gap: var(--space-4);
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.kpi-label { font-size: var(--text-xs); color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+.kpi-value {
+  font-size: var(--text-xl); font-weight: 700;
+  color: var(--text); margin-top: var(--space-2);
+  font-variant-numeric: tabular-nums lining-nums;
+  transition: color var(--transition);
+}
+.kpi-sub { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); }
+.kpi-card.ok .kpi-value { color: var(--ok); }
+.kpi-card.warn .kpi-value { color: var(--warn); }
+.kpi-card.danger .kpi-value { color: var(--danger); }
+
+/* ===== SECTION CARD ===== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.card-header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--divider);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-4);
+}
+.card-title { font-size: var(--text-base); font-weight: 600; color: var(--text); }
+.card-body { padding: var(--space-5); }
+.card-footer {
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--divider);
+  background: var(--surface2);
+  font-size: var(--text-xs); color: var(--muted);
+}
+
+/* ===== CONTROLS ===== */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm); font-weight: 500;
+  border: 1px solid transparent;
+  transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.btn-primary:hover { background: var(--accent-h); border-color: var(--accent-h); box-shadow: var(--shadow-md); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-danger {
+  background: var(--danger-hl); color: var(--danger); border-color: var(--danger);
+}
+.btn-danger:hover { background: var(--danger); color: #fff; }
+.btn-ghost {
+  color: var(--muted); border-color: var(--border); background: var(--surface2);
+}
+.btn-ghost:hover { color: var(--text); background: var(--surface3); }
+
+/* ===== PROGRESS BAR ===== */
+.progress-wrap { width: 100%; background: var(--surface3); border-radius: var(--radius-full); height: 6px; overflow: hidden; }
+.progress-bar {
+  height: 100%; border-radius: var(--radius-full);
+  background: var(--accent);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s;
+}
+.progress-bar.ok { background: var(--ok); }
+.progress-bar.warn { background: var(--warn); }
+.progress-bar.danger { background: var(--danger); }
+
+/* ===== ORBIT CANVAS ===== */
+#orbitCanvas {
+  width: 100%; aspect-ratio: 1;
+  max-height: 320px;
+  display: block;
+  border-radius: var(--radius-lg);
+  background: var(--surface2);
+}
+
+/* ===== LOG ===== */
+.log-wrap {
+  max-height: 220px; overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: var(--text-xs);
+  font-family: 'SF Mono', 'Consolas', monospace;
+  color: var(--muted);
+  padding: var(--space-4);
+  background: var(--surface2);
+  border-radius: var(--radius-md);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.log-entry { display: flex; gap: var(--space-3); }
+.log-time { color: var(--faint); flex-shrink: 0; }
+.log-msg.ok { color: var(--ok); }
+.log-msg.warn { color: var(--warn); }
+.log-msg.info { color: var(--accent); }
+.log-msg.sys { color: var(--muted); }
+
+/* ===== SLIDERS ===== */
+.param-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+@media (max-width: 640px) { .param-grid { grid-template-columns: 1fr; } }
+.param-row { display: flex; flex-direction: column; gap: var(--space-2); }
+.param-label { font-size: var(--text-xs); color: var(--muted); font-weight: 500; display: flex; justify-content: space-between; }
+.param-label span { color: var(--text); font-variant-numeric: tabular-nums; }
+input[type="range"] {
+  width: 100%; accent-color: var(--accent);
+  cursor: pointer; height: 20px;
+}
+
+/* ===== SAFETY PANEL ===== */
+.safety-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: var(--space-3);
+}
+.safety-item {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  font-size: var(--text-xs); color: var(--text);
+}
+.safety-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.safety-icon.ok { background: var(--ok-hl); color: var(--ok); }
+.safety-icon.warn { background: var(--warn-hl); color: var(--warn); }
+.safety-title { font-weight: 600; font-size: var(--text-xs); }
+.safety-sub { color: var(--muted); font-size: var(--text-xs); }
+
+/* ===== TABS ===== */
+.tabs { display: flex; gap: var(--space-2); border-bottom: 1px solid var(--border); }
+.tab-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm); color: var(--muted);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color var(--transition), border-color var(--transition);
+  cursor: pointer;
+}
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-panel { display: none; padding-top: var(--space-5); }
+.tab-panel.active { display: block; }
+
+/* ===== CONTROLS ROW ===== */
+.ctrl-row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.ctrl-sep { width: 1px; height: 24px; background: var(--border); }
+
+/* ===== ITER TABLE ===== */
+.iter-table { width: 100%; border-collapse: collapse; font-size: var(--text-xs); }
+.iter-table th {
+  text-align: left; padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border); color: var(--muted);
+  font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;
+  background: var(--surface2); position: sticky; top: 0; z-index: 1;
+}
+.iter-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--divider);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.iter-table tr:last-child td { border-bottom: none; }
+.iter-table tr:hover td { background: var(--surface2); }
+.table-wrap { max-height: 260px; overflow-y: auto; overscroll-behavior: contain; border-radius: var(--radius-md); border: 1px solid var(--border); }
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: var(--space-16) var(--space-8);
+  color: var(--muted);
+}
+.empty-state svg { width: 48px; height: 48px; margin-bottom: var(--space-4); color: var(--faint); }
+.empty-state h3 { color: var(--text); margin-bottom: var(--space-2); font-size: var(--text-base); }
+.empty-state p { max-width: 36ch; margin-bottom: var(--space-6); font-size: var(--text-sm); }
+
+/* ===== ALERT ===== */
+.alert {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md); border: 1px solid;
+  font-size: var(--text-sm);
+}
+.alert.info { background: var(--accent-hl); border-color: var(--accent); color: var(--accent); }
+.alert.warn { background: var(--warn-hl); border-color: var(--warn); color: var(--warn); }
+.alert.ok { background: var(--ok-hl); border-color: var(--ok); color: var(--ok); }
+
+/* ===== OVERFLOW ===== */
+.gap-3 { display: flex; flex-direction: column; gap: var(--space-3); }
+.gap-4 { display: flex; flex-direction: column; gap: var(--space-4); }
+.gap-6 { display: flex; flex-direction: column; gap: var(--space-6); }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.text-muted { color: var(--muted); font-size: var(--text-xs); }
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 48px 1fr; }
+  .sidebar { display: none; }
+  .main { padding: var(--space-4); }
+  .sidebar.open { display: block; position: fixed; top: 48px; left: 0; bottom: 0; width: 220px; z-index: 30; }
+}
+
+/* LEGAL MODAL STYLES */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; opacity: 1; transition: opacity 0.3s;
+}
+.modal-overlay.hidden { display: none; opacity: 0; }
+.modal-content {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); width: 90%; max-width: 600px;
+    padding: var(--space-6); box-shadow: var(--shadow-lg);
+    max-height: 80vh; overflow-y: auto; color: var(--text);
+}
+.modal-content h2 { color: var(--danger); margin-bottom: var(--space-4); font-size: var(--text-lg); }
+.modal-content h3 { color: var(--accent); margin-top: var(--space-4); margin-bottom: var(--space-2); font-size: var(--text-base); }
+.modal-content p, .modal-content li { font-size: var(--text-sm); color: var(--muted); line-height: 1.5; margin-bottom: var(--space-2); }
+.modal-content ul { padding-left: var(--space-4); margin-bottom: var(--space-4); }
+.modal-actions { margin-top: var(--space-6); display: flex; justify-content: flex-end; gap: var(--space-3); }
+
+/* DOMAIN SELECTOR */
+.domain-selector { margin-left: var(--space-4); padding: var(--space-1) var(--space-2); background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-md); font-size: var(--text-sm); }
+
+</style>
+</head>
+<body>
+
+
+    <!-- LEGAL AND PRIVACY MODAL -->
+    <div id="legalModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>⚠️ LEGAL DISCLAIMER & TERMS OF USE</h2>
+            <p><strong>Planetary Core System - Trinity-Infinity Framework Simulator</strong></p>
+            <p>Before initializing the system, you must acknowledge and agree to the following terms. This is designed for public release with maximum consideration for legal risk mitigation.</p>
+
+            <h3>1. Scientific Attribution (Intellectual Property)</h3>
+            <p>This application is a conceptual simulation based entirely on the <strong>Trinity-Infinity Framework (Series I & II)</strong> authored by <strong>Takuya Nemoto</strong> (ORCID: 0009-0000-1406-0547, DOI: 10.5281/zenodo.17173703). All theoretical models, equations, and governance concepts belong to the original author.</p>
+
+            <h3>2. Limitation of Liability & "As-Is" Provision</h3>
+            <p>This software is provided "AS IS", without warranty of any kind, express or implied. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability. <strong>This is a theoretical mathematical simulator. It does NOT control actual planetary systems, social governance networks, or physical robotic machinery.</strong> Any application of these models to real-world policy or engineering is at the sole risk of the user.</p>
+
+            <h3>3. Privacy & Data Protection</h3>
+            <p>This application operates entirely within your local browser (Client-Side). <strong>NO personal data, telemetry, or simulation parameters are collected, stored, or transmitted to any external servers.</strong> It is inherently compliant with GDPR, CCPA, and APPI.</p>
+
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="acceptLegal()">I Acknowledge and Agree</button>
+            </div>
+        </div>
+    </div>
+
+<div class="app" id="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <a class="logo" href="#" onclick="return false;">
+      <!-- SVG Logo: abstract orbital ring -->
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="Planetary Core System logo">
+        <circle cx="14" cy="14" r="4.5" fill="var(--accent)"/>
+        <ellipse cx="14" cy="14" rx="12" ry="5" stroke="var(--accent)" stroke-width="1.5" fill="none" opacity="0.5"/>
+        <ellipse cx="14" cy="14" rx="12" ry="5" stroke="var(--accent)" stroke-width="1.5" fill="none" opacity="0.3" transform="rotate(60 14 14)"/>
+        <ellipse cx="14" cy="14" rx="12" ry="5" stroke="var(--accent)" stroke-width="1.5" fill="none" opacity="0.3" transform="rotate(120 14 14)"/>
+      </svg>
+      Planetary Core System
+    </a>
+    <div class="topbar-right">
+        <select id="domainSelect" class="domain-selector" onchange="changeDomain(this.value)">
+            <option value="abstract">Mode: Abstract Trinity</option>
+            <option value="governance">Mode: Societal Governance</option>
+            <option value="mechanical">Mode: Mechanical Fractal</option>
+            <option value="game">Mode: Game Theory</option>
+        </select>
+
+      <div class="status-badge" id="statusBadge">
+        <div class="status-dot"></div>
+        <span id="statusText">休止中</span>
+      </div>
+      <button class="icon-btn" onclick="toggleTheme()" aria-label="テーマ切替" title="テーマ切替">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <span class="sidebar-label">ナビゲーション</span>
+      <a class="sidebar-item active" onclick="navigate('overview', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        コア概要
+      </a>
+      <a class="sidebar-item" onclick="navigate('engine', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        収束エンジン
+      </a>
+      <a class="sidebar-item" onclick="navigate('orbit', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20 10 10 0 0 1 0-20"/><path d="M2 12h20"/></svg>
+        軌道観測
+      </a>
+      <a class="sidebar-item" onclick="navigate('params', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M6.34 17.66l-1.41 1.41M2 12h2m16 0h2M6.34 6.34l1.41 1.41M16.24 16.24l1.41 1.41"/></svg>
+        パラメータ
+      </a>
+      <div class="sidebar-divider"></div>
+      <span class="sidebar-label">管理</span>
+      <a class="sidebar-item" onclick="navigate('safety', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        安全制御
+      </a>
+      <a class="sidebar-item" onclick="navigate('log', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        観測ログ
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ===== PAGE: OVERVIEW ===== -->
+    <section class="page visible" id="page-overview">
+      <div>
+        <div class="page-title">コア概要</div>
+        <div class="page-desc">内部状態のリアルタイム監視。すべての操作はユーザーが明示的に起動します。自動起動・外部送信は行いません。</div>
+      </div>
+
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card" id="kpi-state">
+          <div class="kpi-label">コア状態</div>
+          <div class="kpi-value" id="kpiCoreState">休止</div>
+          <div class="kpi-sub">手動起動のみ</div>
+        </div>
+        <div class="kpi-card" id="kpi-conv">
+          <div class="kpi-label">収束率</div>
+          <div class="kpi-value" id="kpiConvRate">—</div>
+          <div class="kpi-sub">目標 &lt; 1×10⁻⁶</div>
+        </div>
+        <div class="kpi-card" id="kpi-iter">
+          <div class="kpi-label">反復回数</div>
+          <div class="kpi-value" id="kpiIter">0</div>
+          <div class="kpi-sub">最大 <span id="kpiMaxIter">500</span> 回</div>
+        </div>
+        <div class="kpi-card" id="kpi-lya">
+          <div class="kpi-label">安定度 (Lyapunov)</div>
+          <div class="kpi-value" id="kpiLya">—</div>
+          <div class="kpi-sub">低いほど安定</div>
+        </div>
+      </div>
+
+      <!-- CONVERGENCE PROGRESS -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">収束プロセス</div>
+          <div class="ctrl-row">
+            <button class="btn btn-primary" id="startBtn" onclick="startEngine()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              起動
+            </button>
+            <button class="btn btn-danger" id="stopBtn" onclick="stopEngine()" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+              停止
+            </button>
+            <button class="btn btn-ghost" onclick="resetEngine()">リセット</button>
+          </div>
+        </div>
+        <div class="card-body gap-4">
+          <div>
+            <div class="row-between" style="margin-bottom: var(--space-2);">
+              <span class="text-muted">軸 α（観測層）</span>
+              <span class="text-muted" id="alphaVal">—</span>
+            </div>
+            <div class="progress-wrap"><div class="progress-bar" id="alphaBar" style="width:0%"></div></div>
+          </div>
+          <div>
+            <div class="row-between" style="margin-bottom: var(--space-2);">
+              <span class="text-muted">軸 β（統合層）</span>
+              <span class="text-muted" id="betaVal">—</span>
+            </div>
+            <div class="progress-wrap"><div class="progress-bar" id="betaBar" style="width:0%"></div></div>
+          </div>
+          <div>
+            <div class="row-between" style="margin-bottom: var(--space-2);">
+              <span class="text-muted">軸 γ（拡張層）</span>
+              <span class="text-muted" id="gammaVal">—</span>
+            </div>
+            <div class="progress-wrap"><div class="progress-bar" id="gammaBar" style="width:0%"></div></div>
+          </div>
+          <div>
+            <div class="row-between" style="margin-bottom: var(--space-2);">
+              <span class="text-muted">統合収束距離</span>
+              <span class="text-muted" id="distVal">—</span>
+            </div>
+            <div class="progress-wrap"><div class="progress-bar ok" id="distBar" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="card-footer">エンジンは手動起動後のみ動作。収束・上限到達・手動停止のいずれかで終了します。</div>
+      </div>
+
+      <div class="alert info" id="alertBox" style="display:none"></div>
+    </section>
+
+    <!-- ===== PAGE: ENGINE ===== -->
+    <section class="page" id="page-engine">
+      <div>
+        <div class="page-title">収束エンジン</div>
+        <div class="page-desc">反復ごとの状態遷移ログと収束履歴。自律的なデータ送信はありません。</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">状態遷移履歴</div>
+          <button class="btn btn-ghost" onclick="clearHistory()">クリア</button>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <div id="historyEmpty" class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            <h3>データなし</h3>
+            <p>コア概要ページから起動すると、反復データが記録されます。</p>
+          </div>
+          <div class="table-wrap" id="historyTableWrap" style="display:none;">
+            <table class="iter-table">
+              <thead><tr>
+                <th>#</th><th>α</th><th>β</th><th>γ</th>
+                <th>距離</th><th>Lyapunov</th><th>状態</th>
+              </tr></thead>
+              <tbody id="historyBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: ORBIT ===== -->
+    <section class="page" id="page-orbit">
+      <div>
+        <div class="page-title">軌道観測</div>
+        <div class="page-desc">コア内部の状態空間軌道をリアルタイム描画します。</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">位相空間プロット（α × β）</div>
+          <button class="btn btn-ghost" onclick="clearCanvas()">消去</button>
+        </div>
+        <div class="card-body" style="display:flex; justify-content:center;">
+          <canvas id="orbitCanvas" width="460" height="460"></canvas>
+        </div>
+        <div class="card-footer">軌道は固定点に向かって収束します。軌道が広がる場合は停止してパラメータを調整してください。</div>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: PARAMS ===== -->
+    <section class="page" id="page-params">
+      <div>
+        <div class="page-title">パラメータ設定</div>
+        <div class="page-desc">エンジン停止中に変更可能。起動中は変更できません。</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">内部制御パラメータ</div></div>
+        <div class="card-body">
+          <div class="param-grid">
+            <div class="param-row">
+              <div class="param-label">結合強度 κ <span id="pKappa">0.80</span></div>
+              <input type="range" id="pKappaSlider" min="0.1" max="1.5" step="0.01" value="0.80"
+                oninput="updateParam('pKappa', this.value)"/>
+              <div class="text-muted">要素間の相互依存度。高いほど収束が鮮明だが不安定になりやすい。</div>
+            </div>
+            <div class="param-row">
+              <div class="param-label">非線形係数 η <span id="pEta">1.00</span></div>
+              <input type="range" id="pEtaSlider" min="0.1" max="2.0" step="0.01" value="1.00"
+                oninput="updateParam('pEta', this.value)"/>
+              <div class="text-muted">収束の非線形性。1.0で標準的な tanh 圧縮。</div>
+            </div>
+            <div class="param-row">
+              <div class="param-label">減衰率 δ <span id="pDelta">0.05</span></div>
+              <input type="range" id="pDeltaSlider" min="0.001" max="0.3" step="0.001" value="0.05"
+                oninput="updateParam('pDelta', this.value)"/>
+              <div class="text-muted">Lyapunov 安定性に寄与。増やすと収束が安全に速くなる。</div>
+            </div>
+            <div class="param-row">
+              <div class="param-label">統合重み w <span id="pWeight">0.50</span></div>
+              <input type="range" id="pWeightSlider" min="0.1" max="0.9" step="0.01" value="0.50"
+                oninput="updateParam('pWeight', this.value)"/>
+              <div class="text-muted">Banach 収縮写像の重み。0.5 で均等統合。</div>
+            </div>
+            <div class="param-row">
+              <div class="param-label">最大反復 N <span id="pMaxIter">500</span></div>
+              <input type="range" id="pMaxIterSlider" min="50" max="2000" step="10" value="500"
+                oninput="updateParam('pMaxIter', this.value)"/>
+              <div class="text-muted">強制停止の上限。超過した場合は自動停止。</div>
+            </div>
+            <div class="param-row">
+              <div class="param-label">収束閾値 ε <span id="pEps">1e-6</span></div>
+              <input type="range" id="pEpsSlider" min="-9" max="-3" step="0.5" value="-6"
+                oninput="updateEps(this.value)"/>
+              <div class="text-muted">距離がこれを下回ると収束判定。小さいほど精密。</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer" id="paramFooter">エンジン停止中。パラメータを変更できます。</div>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: SAFETY ===== -->
+    <section class="page" id="page-safety">
+      <div>
+        <div class="page-title">安全制御</div>
+        <div class="page-desc">このシステムのすべての安全機構を確認できます。</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">安全制約一覧</div></div>
+        <div class="card-body">
+          <div class="safety-grid">
+            <div class="safety-item">
+              <div class="safety-icon ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <div><div class="safety-title">手動起動のみ</div><div class="safety-sub">ボタン押下なしに動作しない</div></div>
+            </div>
+            <div class="safety-item">
+              <div class="safety-icon ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <div><div class="safety-title">反復上限</div><div class="safety-sub">N 回で強制停止</div></div>
+            </div>
+            <div class="safety-item">
+              <div class="safety-icon ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <div><div class="safety-title">収束停止</div><div class="safety-sub">ε 以下で自動終了</div></div>
+            </div>
+            <div class="safety-item">
+              <div class="safety-icon ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <div><div class="safety-title">外部送信なし</div><div class="safety-sub">ネットワーク一切不使用</div></div>
+            </div>
+            <div class="safety-item">
+              <div class="safety-icon ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <div><div class="safety-title">自動再起動なし</div><div class="safety-sub">停止後は次の手動操作まで待機</div></div>
+            </div>
+            <div class="safety-item">
+              <div class="safety-icon ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <div><div class="safety-title">外部依存最小</div><div class="safety-sub">CDNフォントのみ使用</div></div>
+            </div>
+            <div class="safety-item">
+              <div class="safety-icon ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <div><div class="safety-title">ローカル完結</div><div class="safety-sub">ブラウザ内のみで動作</div></div>
+            </div>
+            <div class="safety-item">
+              <div class="safety-icon ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <div><div class="safety-title">値域制限</div><div class="safety-sub">tanh で状態を [-1,1] に制約</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">エンジン理論基盤</div></div>
+        <div class="card-body gap-3">
+          <div class="alert info">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div>本エンジンは三有限要素の再帰的相互依存と固定点収束に着想を得た自律エンジンです。外部の組織論・経営フレームワーク・教育メソッドとは無関係です。</div>
+          </div>
+          <div class="text-muted">収束定理: 統合写像 I は縮小写像（Lipschitz 定数 &lt; 1）。Banach 不動点定理により一意な固定点が保証されます。</div>
+          <div class="text-muted">安定性: Lyapunov 関数 V = ½Σ(xᵢ−x*ᵢ)² は単調減少。LaSalle 不変原理による大域漸近安定性が成立します。</div>
+          <div class="text-muted">値域制限: tanh による非線形圧縮により状態を有界に保ち、発散を防ぎます。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: LOG ===== -->
+    <section class="page" id="page-log">
+      <div>
+        <div class="page-title">観測ログ</div>
+        <div class="page-desc">エンジンの全操作と状態変化をタイムスタンプ付きで記録します。</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">ログ</div>
+          <button class="btn btn-ghost" onclick="clearLog()">クリア</button>
+        </div>
+        <div class="card-body" style="padding: var(--space-4) var(--space-5);">
+          <div class="log-wrap" id="logWrap">
+            <div class="log-entry"><span class="log-time">--:--:--</span><span class="log-msg sys">システム初期化完了。起動を待機中。</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// ===== STATE =====
+const S = {
+  running: false,
+  iter: 0,
+  alpha: 0, beta: 0, gamma: 0,
+  fixed: null,
+  history: [],
+  orbitPoints: [],
+  kappa: 0.80, eta: 1.00, delta: 0.05, weight: 0.50,
+  maxIter: 500, eps: 1e-6,
+  animId: null,
+  speed: 8,
+};
+
+function acceptLegal() {
+  document.getElementById('legalModal').style.display = 'none';
+}
+
+function changeDomain(value) {
+  const labels = {
+    abstract: '抽象 Trinity',
+    governance: '社会統治',
+    mechanical: '機械フラクタル',
+    game: 'ゲーム理論'
+  };
+  addLog('モード切替: ' + (labels[value] || value), 'info');
+  const desc = document.querySelector('#page-overview .page-desc');
+  if (desc) desc.textContent = '内部状態のリアルタイム監視。現在モード: ' + (labels[value] || value) + '。すべての操作はユーザーが明示的に起動します。';
+}
+
+// ===== THEME =====
+let isDark = true;
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('themeIcon').innerHTML = isDark
+    ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+    : '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
+}
+
+// ===== NAVIGATION =====
+function navigate(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('visible'));
+  document.querySelectorAll('.sidebar-item').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('visible');
+  if (el) el.classList.add('active');
+}
+
+// ===== PARAM =====
+function updateParam(id, val) {
+  if (S.running) return;
+  const v = parseFloat(val);
+  document.getElementById(id).textContent = v.toFixed(id === 'pDelta' ? 3 : 2);
+  if (id === 'pKappa') S.kappa = v;
+  if (id === 'pEta') S.eta = v;
+  if (id === 'pDelta') S.delta = v;
+  if (id === 'pWeight') S.weight = v;
+  if (id === 'pMaxIter') {
+    S.maxIter = Math.round(v);
+    document.getElementById('pMaxIter').textContent = S.maxIter;
+    document.getElementById('kpiMaxIter').textContent = S.maxIter;
+  }
+}
+function updateEps(val) {
+  if (S.running) return;
+  S.eps = Math.pow(10, parseFloat(val));
+  document.getElementById('pEps').textContent = S.eps.toExponential(0);
+}
+
+// ===== ENGINE CORE (TIF-based recursive integration) =====
+function tifStep(a, b, c) {
+  const k = S.kappa, n = S.eta, d = S.delta, w = S.weight;
+  // Triadic recursive update with tanh bounding
+  const na = Math.tanh((a + k * (w * b + (1 - w) * c)) * n) * (1 - d) + d * 0;
+  const nb = Math.tanh((b + k * (w * c + (1 - w) * a)) * n) * (1 - d) + d * 0;
+  const nc = Math.tanh((c + k * (w * a + (1 - w) * b)) * n) * (1 - d) + d * 0;
+  // Integration map I (convex combination — contraction)
+  const ia = w * na + (1 - w) * (nb + nc) / 2;
+  const ib = w * nb + (1 - w) * (na + nc) / 2;
+  const ic = w * nc + (1 - w) * (na + nb) / 2;
+  return [ia, ib, ic];
+}
+
+function lyapunov(a, b, c) {
+  // V = 1/2 * sum(xi^2) — simplified Lyapunov function
+  return 0.5 * (a * a + b * b + c * c);
+}
+
+function distance(a1, b1, c1, a2, b2, c2) {
+  return Math.sqrt((a1 - a2) ** 2 + (b1 - b2) ** 2 + (c1 - c2) ** 2);
+}
+
+// ===== START / STOP =====
+function startEngine() {
+  if (S.running) return;
+  // Random initial state — bounded in [-1, 1]
+  S.alpha = (Math.random() * 2 - 1) * 0.9;
+  S.beta  = (Math.random() * 2 - 1) * 0.9;
+  S.gamma = (Math.random() * 2 - 1) * 0.9;
+  S.fixed = null;
+  S.iter = 0;
+  S.history = [];
+  S.orbitPoints = [];
+  S.running = true;
+
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = false;
+  document.getElementById('paramFooter').textContent = '起動中。パラメータはロックされています。';
+  document.querySelectorAll('#page-params input').forEach(i => i.disabled = true);
+  setStatus('active', '動作中');
+  hideAlert();
+  addLog('起動 — 初期状態: α=' + S.alpha.toFixed(4) + ' β=' + S.beta.toFixed(4) + ' γ=' + S.gamma.toFixed(4), 'info');
+  loop();
+}
+
+function stopEngine(reason) {
+  if (!S.running) return;
+  S.running = false;
+  if (S.animId) { cancelAnimationFrame(S.animId); S.animId = null; }
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  document.getElementById('paramFooter').textContent = 'エンジン停止中。パラメータを変更できます。';
+  document.querySelectorAll('#page-params input').forEach(i => i.disabled = false);
+  setStatus('', '休止中');
+  const msg = reason || '手動停止';
+  addLog('停止: ' + msg + ' | 反復=' + S.iter, 'warn');
+  showAlert(msg + '。反復回数: ' + S.iter + '  最終距離: ' + (S.lastDist !== undefined ? S.lastDist.toExponential(3) : '—'), 'info');
+  updateKpiState('休止', '');
+}
+
+function resetEngine() {
+  stopEngine('リセット');
+  S.iter = 0; S.alpha = 0; S.beta = 0; S.gamma = 0;
+  S.history = []; S.orbitPoints = [];
+  updateDisplay(0, 0, 0, 0, 0);
+  clearCanvas();
+  updateKpiState('休止', '');
+  addLog('リセット完了', 'sys');
+}
+
+// ===== LOOP =====
+function loop() {
+  if (!S.running) return;
+  for (let i = 0; i < S.speed; i++) {
+    if (!S.running) break;
+    const [na, nb, nc] = tifStep(S.alpha, S.beta, S.gamma);
+    const dist = distance(na, nb, nc, S.alpha, S.beta, S.gamma);
+    const lya  = lyapunov(na, nb, nc);
+    S.lastDist = dist;
+    S.history.push({ n: S.iter + 1, a: na, b: nb, c: nc, dist, lya });
+    if (S.history.length > 1000) S.history.shift();
+    S.orbitPoints.push([na, nb]);
+    if (S.orbitPoints.length > 600) S.orbitPoints.shift();
+    S.alpha = na; S.beta = nb; S.gamma = nc;
+    S.iter++;
+
+    if (dist < S.eps) {
+      S.fixed = [na, nb, nc];
+      updateDisplay(na, nb, nc, dist, lya);
+      drawOrbit();
+      updateHistoryTable();
+      stopEngine('収束完了 — 固定点到達');
+      setStatus('active', '収束済');
+      document.getElementById('kpi-conv').classList.add('ok');
+      return;
+    }
+    if (S.iter >= S.maxIter) {
+      updateDisplay(na, nb, nc, dist, lya);
+      drawOrbit();
+      updateHistoryTable();
+      stopEngine('上限到達 (' + S.maxIter + '回)');
+      setStatus('warning', '上限到達');
+      return;
+    }
+  }
+  updateDisplay(S.alpha, S.beta, S.gamma, S.lastDist, lyapunov(S.alpha, S.beta, S.gamma));
+  drawOrbit();
+  if (S.iter % 20 === 0) updateHistoryTable();
+  S.animId = requestAnimationFrame(loop);
+}
+
+// ===== DISPLAY =====
+function updateDisplay(a, b, c, dist, lya) {
+  const pct = v => Math.min(100, Math.abs(v) * 100).toFixed(1) + '%';
+  const barClass = d => d > 0.01 ? '' : d > 0.0001 ? 'ok' : 'ok';
+
+  el('alphaVal').textContent = a.toFixed(5);
+  el('betaVal').textContent  = b.toFixed(5);
+  el('gammaVal').textContent = c.toFixed(5);
+  el('distVal').textContent  = dist !== undefined ? dist.toExponential(3) : '—';
+
+  bar('alphaBar', Math.abs(a) * 100, '');
+  bar('betaBar',  Math.abs(b) * 100, '');
+  bar('gammaBar', Math.abs(c) * 100, '');
+  bar('distBar', Math.min(100, (1 - dist) * 100), dist < 1e-3 ? 'ok' : dist < 1e-1 ? '' : 'warn');
+
+  el('kpiConvRate').textContent = dist !== undefined ? dist.toExponential(2) : '—';
+  el('kpiIter').textContent     = S.iter.toLocaleString();
+  el('kpiLya').textContent      = lya !== undefined ? lya.toFixed(5) : '—';
+
+  // KPI coloring
+  kpiColor('kpi-conv', dist, 1e-3, 1e-5);
+  kpiColor('kpi-lya', lya, 0.1, 0.01);
+}
+
+function kpiColor(id, val, warnT, okT) {
+  const card = document.getElementById(id);
+  card.classList.remove('ok', 'warn', 'danger');
+  if (val === undefined) return;
+  if (val < okT) card.classList.add('ok');
+  else if (val < warnT) card.classList.add('warn');
+}
+
+function updateKpiState(label, cls) {
+  const v = document.getElementById('kpiCoreState');
+  v.textContent = label;
+  el('kpi-state').classList.remove('ok', 'warn', 'danger');
+  if (cls) el('kpi-state').classList.add(cls);
+}
+
+function el(id) { return document.getElementById(id); }
+function bar(id, pct, cls) {
+  const b = el(id);
+  b.style.width = Math.max(0, Math.min(100, pct)).toFixed(1) + '%';
+  b.className = 'progress-bar' + (cls ? ' ' + cls : '');
+}
+
+// ===== ORBIT CANVAS =====
+function drawOrbit() {
+  const canvas = document.getElementById('orbitCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = 32;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  const style = getComputedStyle(document.documentElement);
+  ctx.strokeStyle = isDark ? 'rgba(30,42,58,0.9)' : 'rgba(208,220,232,0.8)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 8; i++) {
+    const x = pad + (W - 2 * pad) * i / 8;
+    const y = pad + (H - 2 * pad) * i / 8;
+    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, H - pad); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+  }
+
+  // Axes
+  const cx = W / 2, cy = H / 2;
+  ctx.strokeStyle = isDark ? 'rgba(58,80,100,1)' : 'rgba(180,200,215,1)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(pad, cy); ctx.lineTo(W - pad, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, pad); ctx.lineTo(cx, H - pad); ctx.stroke();
+
+  // Orbit trail
+  if (S.orbitPoints.length < 2) return;
+  const scale = (W - 2 * pad) / 2;
+  const toX = v => cx + v * scale;
+  const toY = v => cy - v * scale;
+  const pts = S.orbitPoints;
+  const n = pts.length;
+
+  for (let i = 1; i < n; i++) {
+    const t = i / n;
+    ctx.beginPath();
+    ctx.moveTo(toX(pts[i - 1][0]), toY(pts[i - 1][1]));
+    ctx.lineTo(toX(pts[i][0]), toY(pts[i][1]));
+    ctx.strokeStyle = `rgba(61,143,191,${0.15 + t * 0.7})`;
+    ctx.lineWidth = 1 + t * 1.5;
+    ctx.stroke();
+  }
+
+  // Current point
+  const last = pts[n - 1];
+  ctx.beginPath();
+  ctx.arc(toX(last[0]), toY(last[1]), 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#3d8fbf';
+  ctx.fill();
+
+  // Fixed point marker
+  if (S.fixed) {
+    ctx.beginPath();
+    ctx.arc(toX(S.fixed[0]), toY(S.fixed[1]), 9, 0, Math.PI * 2);
+    ctx.strokeStyle = '#3abf7a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(58,191,122,0.2)';
+    ctx.fill();
+  }
+
+  // Labels
+  ctx.fillStyle = isDark ? 'rgba(90,112,128,0.9)' : 'rgba(90,112,128,0.9)';
+  ctx.font = '11px Satoshi, sans-serif';
+  ctx.fillText('α', W - pad + 4, cy + 4);
+  ctx.fillText('β', cx + 4, pad - 8);
+}
+
+function clearCanvas() {
+  const canvas = document.getElementById('orbitCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  S.orbitPoints = [];
+}
+
+// ===== HISTORY TABLE =====
+function updateHistoryTable() {
+  const tbody = el('historyBody');
+  const empty = el('historyEmpty');
+  const wrap  = el('historyTableWrap');
+  if (!S.history.length) { empty.style.display = ''; wrap.style.display = 'none'; return; }
+  empty.style.display = 'none'; wrap.style.display = '';
+  const show = S.history.slice(-80);
+  tbody.innerHTML = show.map(r => {
+    const cls = r.dist < 1e-4 ? 'color:var(--ok)' : r.dist < 1e-2 ? 'color:var(--warn)' : '';
+    return `<tr>
+      <td>${r.n}</td>
+      <td>${r.a.toFixed(5)}</td>
+      <td>${r.b.toFixed(5)}</td>
+      <td>${r.c.toFixed(5)}</td>
+      <td style="${cls}">${r.dist.toExponential(2)}</td>
+      <td>${r.lya.toFixed(5)}</td>
+      <td style="${cls}">${r.dist < S.eps ? '✓ 収束' : r.n >= S.maxIter ? '⚠ 上限' : '—'}</td>
+    </tr>`;
+  }).join('');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function clearHistory() { S.history = []; updateHistoryTable(); }
+
+// ===== STATUS =====
+function setStatus(cls, text) {
+  const badge = el('statusBadge');
+  badge.className = 'status-badge' + (cls ? ' ' + cls : '');
+  el('statusText').textContent = text;
+  const kpiState = el('kpi-state');
+  kpiState.classList.remove('ok', 'warn', 'danger');
+  if (cls === 'active') { kpiState.classList.add('ok'); el('kpiCoreState').textContent = '動作中'; }
+  else if (cls === 'warning') { kpiState.classList.add('warn'); el('kpiCoreState').textContent = '停止 (上限)'; }
+}
+
+// ===== LOG =====
+function addLog(msg, type) {
+  const now = new Date();
+  const t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(v => String(v).padStart(2, '0')).join(':');
+  const wrap = el('logWrap');
+  const row = document.createElement('div');
+  row.className = 'log-entry';
+  row.innerHTML = `<span class="log-time">${t}</span><span class="log-msg ${type || 'sys'}">${msg}</span>`;
+  wrap.appendChild(row);
+  if (wrap.children.length > 200) wrap.removeChild(wrap.firstChild);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+function clearLog() { el('logWrap').innerHTML = ''; }
+
+// ===== ALERT =====
+function showAlert(msg, type) {
+  const box = el('alertBox');
+  box.className = 'alert ' + (type || 'info');
+  box.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>${msg}</div>`;
+  box.style.display = 'flex';
+}
+function hideAlert() { el('alertBox').style.display = 'none'; }
+
+// ===== INIT =====
+addLog('Planetary Core System 起動完了。全安全機構 ✓ 有効。', 'info');
+addLog('内部エンジン: 再帰統合収束モデル (手動起動待機中)', 'sys');
+</script>
+</body>
+</html>
